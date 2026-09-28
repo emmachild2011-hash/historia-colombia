@@ -1,0 +1,1141 @@
+```
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Ideologías del Siglo XIX - Colombia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        conservador: '#1E3A8A',
+                        liberal: '#B91C1C',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        cinzel: ['Cinzel', 'serif'],
+                        serif: ['Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 1s ease, color 1s ease;
+        }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Floating Score Popups */
+        .pop-indicator {
+            animation: popUp 1.2s ease-out forwards;
+        }
+        @keyframes popUp {
+            0% { opacity: 0; transform: translateY(0) scale(0.8); }
+            30% { opacity: 1; transform: translateY(-15px) scale(1.1); }
+            80% { opacity: 1; transform: translateY(-25px) scale(1); }
+            100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
+        }
+
+        /* Dynamic Atmosphere Themes */
+        .theme-normal { background-color: #0b0f19; color: #f1f5f9; }
+        .theme-tense { background-color: #1a140a; color: #fef3c7; }
+        .theme-war { background-color: #1a0505; color: #fecdd3; }
+        .theme-victory-blue { background-color: #03152d; color: #e0f2fe; }
+        .theme-victory-red { background-color: #2b040a; color: #fce7f3; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="theme-normal min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+
+    <header class="w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 shadow-lg">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 font-black font-cinzel text-xl shadow-md border border-amber-400/40">
+                    XIX
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-cinzel font-bold tracking-wider text-amber-200">HISTORIA DE COLOMBIA</h1>
+                    <p class="text-xs text-slate-400">Siglo XIX: Decisiones & Destino</p>
+                </div>
+            </div>
+
+            <!-- Permanently visible status once game starts -->
+            <div id="header-status" class="hidden flex items-center gap-4 bg-slate-900/90 px-4 py-2 rounded-xl border border-slate-800 shadow-inner relative">
+                <div class="flex items-center gap-2">
+                    <span id="header-avatar" class="text-2xl"></span>
+                    <span id="header-party" class="text-xs font-bold uppercase tracking-wider"></span>
+                </div>
+                <div class="h-6 w-px bg-slate-800"></div>
+                <div class="flex flex-col min-w-[120px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold">
+                        <span class="uppercase text-slate-400">Popularidad</span>
+                        <span id="header-pop-text" class="text-amber-400 font-mono">50%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden mt-1 border border-slate-800 relative">
+                        <div id="header-pop-bar" class="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500" style="width: 50%;"></div>
+                    </div>
+                </div>
+
+                <!-- Floating Popularity Indicator Container -->
+                <div id="pop-feedback-anchor" class="absolute right-2 -bottom-6 pointer-events-none"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto w-full px-4 py-8 flex-grow flex flex-col justify-center">
+
+        <section id="screen-quiz" class="fade-in space-y-8">
+            <div class="text-center space-y-3">
+                <span class="px-3.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-xs font-bold uppercase tracking-widest">
+                    Cuestionario de Posicionamiento Político
+                </span>
+                <h2 class="text-3xl md:text-4xl font-cinzel font-bold text-slate-100">¿Cuál es tu visión de la nación?</h2>
+                <p class="text-slate-300 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+                    Responde a las siguientes 5 preguntas iniciales para determinar tu personaje ideológico en la historia colombiana del siglo XIX.
+                </p>
+            </div>
+
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-sm">
+                <div class="flex justify-between items-center text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                    <span>Pregunta <span id="quiz-step-num">1</span> de 5</span>
+                    <span id="quiz-progress-text">20% Completado</span>
+                </div>
+
+                <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div id="quiz-progress-bar" class="bg-gradient-to-r from-amber-600 to-amber-400 h-full transition-all duration-300" style="width: 20%;"></div>
+                </div>
+
+                <h3 id="quiz-question-title" class="text-xl md:text-2xl font-semibold text-slate-100 min-h-[3rem] flex items-center">
+                    Cargando pregunta...
+                </h3>
+
+                <div id="quiz-options-container" class="grid grid-cols-1 gap-4 pt-2">
+                    <!-- Options injected dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-result" class="hidden fade-in space-y-8">
+            <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-8 backdrop-blur-sm">
+                
+                <div class="text-center space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-400">Personaje Asignado</span>
+                    <h2 id="result-title" class="text-3xl md:text-5xl font-cinzel font-black"></h2>
+                    <p id="result-subtitle" class="text-slate-300 text-sm md:text-base max-w-xl mx-auto leading-relaxed"></p>
+                </div>
+
+                <div id="result-character-card" class="rounded-2xl p-6 md:p-8 border flex flex-col md:flex-row items-center gap-8 shadow-2xl">
+                    <div id="result-svg-container" class="w-full md:w-64 h-64 flex-shrink-0 flex items-center justify-center bg-slate-950/80 rounded-xl border border-slate-800 p-2">
+                        <!-- SVG graphic injected dynamically -->
+                    </div>
+
+                    <div class="space-y-4 text-left flex-grow">
+                        <div class="flex items-center gap-2">
+                            <span id="result-badge-ideology" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"></span>
+                        </div>
+                        <p id="result-description" class="text-slate-200 text-sm md:text-base leading-relaxed"></p>
+                        
+                        <div id="result-symbolism" class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
+                            <!-- Symbolism breakdown -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 border-t border-slate-800 pt-6">
+                    <h3 class="text-lg font-cinzel font-bold text-amber-300 flex items-center gap-2">
+                        <span>📜</span> Explicación Pedagógica de tus Respuestas
+                    </h3>
+                    <p class="text-xs text-slate-400">
+                        Análisis pedagógico sobre la inclinación política de tus 5 selecciones iniciales:
+                    </p>
+
+                    <div id="answers-breakdown-container" class="space-y-3">
+                        <!-- Educational list injected dynamically -->
+                    </div>
+                </div>
+
+                <div class="pt-4 text-center">
+                    <button id="btn-start-story" class="w-full md:w-auto px-10 py-4 rounded-xl font-cinzel font-bold text-lg text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 shadow-lg shadow-amber-500/20 transition-all transform hover:-translate-y-0.5">
+                        Comenzar la Historia del Siglo XIX →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-game" class="hidden fade-in space-y-6">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-sm">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-slate-800 pb-4">
+                    <div>
+                        <span id="game-chapter-num" class="text-xs font-bold uppercase tracking-widest text-amber-400">Escenario 1 de 15</span>
+                        <h2 id="game-chapter-title" class="text-2xl md:text-3xl font-cinzel font-bold text-slate-100"></h2>
+                        <div class="flex gap-2 mt-1">
+                            <span id="game-meta-type" class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700"></span>
+                            <span id="game-meta-scope" class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"></span>
+                        </div>
+                    </div>
+                    <div id="game-atmosphere-badge" class="px-3.5 py-1 rounded-full text-xs font-bold uppercase border">
+                        Tensión Política
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <div class="md:col-span-1 bg-slate-950/90 rounded-xl p-4 border border-slate-800 flex flex-col items-center justify-center text-center shadow-inner">
+                        <div id="game-svg-portrait" class="w-40 h-40 mb-2"></div>
+                        <span id="game-portrait-name" class="font-cinzel font-bold text-sm text-slate-200"></span>
+                        <span id="game-portrait-role" class="text-xs text-slate-400">Protagonista</span>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                            <p id="game-narrative-text" class="text-slate-200 text-sm md:text-base leading-relaxed italic font-serif">
+                                Cuestión histórica...
+                            </p>
+                        </div>
+                        <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <p id="game-dilemma-prompt" class="text-xs md:text-sm font-semibold text-amber-200">
+                                ¿Qué decisión tomarás frente a esta situación?
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-800">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Opciones de Decisión:</h3>
+                    <div id="game-options-container" class="space-y-3">
+                        <!-- Options injected dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consequence Box -->
+            <div id="game-consequence-box" class="hidden fade-in bg-slate-950 border rounded-2xl p-6 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span id="consequence-icon" class="text-2xl"></span>
+                        <h4 id="consequence-title" class="font-cinzel font-bold text-lg"></h4>
+                    </div>
+                    <span id="consequence-pop-badge" class="px-3 py-1 rounded-full font-mono text-xs font-bold"></span>
+                </div>
+                <p id="consequence-text" class="text-sm text-slate-300 leading-relaxed"></p>
+                <div class="flex justify-end">
+                    <button id="btn-next-scenario" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm font-cinzel transition-all shadow-md">
+                        Avanzar al Siguiente Evento →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-epilogue" class="hidden fade-in space-y-8">
+            <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 text-center backdrop-blur-sm">
+                <span class="text-xs font-bold uppercase tracking-widest text-amber-400">Veredicto Final</span>
+                <h2 id="epilogue-title" class="text-3xl md:text-4xl font-cinzel font-bold text-slate-100">Destino de la Nación</h2>
+
+                <div class="max-w-2xl mx-auto p-6 bg-slate-950/90 rounded-xl border border-slate-800 space-y-4 text-left">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <span class="text-xs text-slate-400 uppercase">Personaje</span>
+                            <h3 id="epilogue-character-name" class="font-cinzel font-bold text-lg text-amber-300"></h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 uppercase">Popularidad Final</span>
+                            <p id="epilogue-pop-val" class="font-bold font-mono text-2xl text-amber-400"></p>
+                        </div>
+                    </div>
+
+                    <p id="epilogue-text" class="text-sm md:text-base text-slate-300 leading-relaxed font-serif">
+                        Cierre histórico de tu trayectoria...
+                    </p>
+
+                    <div id="epilogue-highlights" class="p-4 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-2">
+                        <strong class="text-amber-400 font-cinzel block text-sm">Resumen de tus 15 Decisiones:</strong>
+                        <ul id="epilogue-list" class="list-disc list-inside space-y-1 max-h-60 overflow-y-auto pr-2"></ul>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-center">
+                    <button id="btn-restart" class="px-8 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl font-cinzel font-bold text-sm transition-all border border-slate-700 shadow-lg">
+                        🔄 Reiniciar Juego
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="w-full border-t border-slate-800/80 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
+        <p>Juego Educativo de Historia de Colombia • Siglo XIX</p>
+    </footer>
+
+    <script>
+        // GAME STATE
+        const state = {
+            quizIndex: 0,
+            answers: [], 
+            conservativeScore: 0,
+            liberalScore: 0,
+            assignedParty: null, // 'CONSERVADOR' or 'LIBERAL'
+            popularity: 50,
+            currentScenarioIndex: 0,
+            historyLog: []
+        };
+
+        // INITIAL 5 QUIZ QUESTIONS (Hidden ideological labels)
+        const quizQuestions = [
+            {
+                id: 1,
+                title: "Pregunta 1. ¿Qué tipo de gobierno prefieres?",
+                options: [
+                    {
+                        text: "Que Bogotá gobierne todo Colombia.",
+                        type: "CONSERVADOR",
+                        explanation: "Respuesta Conservadora: Apoya el centralismo de poder en Bogotá para preservar la cohesión y el orden."
+                    },
+                    {
+                        text: "Los departamentos puedan gobernar cada departamento como quieran.",
+                        type: "LIBERAL",
+                        explanation: "Respuesta Liberal: Defiende la autonomía regional y el sistema federalista."
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Pregunta 2. ¿Cómo quieres que la religión Católica esté involucrada en la formación del país?",
+                options: [
+                    {
+                        text: "Que la iglesia católica está involucrada con la enseñanza y el gobierno.",
+                        type: "CONSERVADOR",
+                        explanation: "Respuesta Conservadora: Mantiene la alianza con la Iglesia Católica en la educación y la moral política."
+                    },
+                    {
+                        text: "Que la iglesia no esté involucrada en la enseñanza ni el gobierno.",
+                        type: "LIBERAL",
+                        explanation: "Respuesta Liberal: Defiende la educación laica y la separación entre Iglesia y Estado."
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Pregunta 3. ¿Prefieres que la exportación de tabaco sea permitida?",
+                options: [
+                    {
+                        text: "Se quede entre Colombia.",
+                        type: "CONSERVADOR",
+                        explanation: "Respuesta Conservadora: Apoya el proteccionismo y el monopolio estatal del tabaco."
+                    },
+                    {
+                        text: "Libre cambio entre naciones.",
+                        type: "LIBERAL",
+                        explanation: "Respuesta Liberal: Apoya la eliminación de monopolios y el libre comercio internacional."
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Pregunta 4. ¿Crees que las mujeres deberían poder trabajar en el gobierno?",
+                options: [
+                    {
+                        text: "No.",
+                        type: "CONSERVADOR",
+                        explanation: "Respuesta Conservadora: Preserva las estructuras sociales y roles tradicionales coloniales."
+                    },
+                    {
+                        text: "Si.",
+                        type: "LIBERAL",
+                        explanation: "Respuesta Liberal: Promueve la inclusión y libertades civiles para las mujeres."
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "Pregunta 5. ¿El gobierno debería enforzar impuestos?",
+                options: [
+                    {
+                        text: "Si.",
+                        type: "CONSERVADOR",
+                        explanation: "Respuesta Conservadora: Fortalece el erario estatal mediante impuestos obligatorios para sostener el orden."
+                    },
+                    {
+                        text: "No.",
+                        type: "LIBERAL",
+                        explanation: "Respuesta Liberal: Busca reducir la carga fiscal y promover la libertad individual de mercado."
+                    }
+                ]
+            }
+        ];
+
+        function getRealisticHorseSVG() {
+            return `
+            <svg viewBox="0 0 320 280" class="w-full h-full drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="horseCoat" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#2563eb" />
+                        <stop offset="50%" stop-color="#1d4ed8" />
+                        <stop offset="100%" stop-color="#0f172a" />
+                    </linearGradient>
+                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#fef08a" />
+                        <stop offset="50%" stop-color="#eab308" />
+                        <stop offset="100%" stop-color="#854d0e" />
+                    </linearGradient>
+                </defs>
+                <ellipse cx="150" cy="255" rx="110" ry="12" fill="#000000" opacity="0.4" />
+                <path d="M 235 125 C 260 145, 265 190, 245 220 C 238 200, 248 160, 230 130 Z" fill="#0f172a" />
+                <path d="M 210 160 L 225 210 L 222 250 L 210 250 L 212 210 L 195 165 Z" fill="#1e3a8a" />
+                <path d="M 125 160 L 130 205 L 122 250 L 112 250 L 118 205 L 112 165 Z" fill="#1e3a8a" />
+                <rect x="210" y="246" width="12" height="5" fill="#475569" rx="1"/>
+                <rect x="112" y="246" width="10" height="5" fill="#475569" rx="1"/>
+                <path d="M 85 115 C 105 105, 180 100, 225 120 C 240 140, 225 175, 205 180 C 160 185, 110 180, 85 155 Z" fill="url(#horseCoat)" />
+                <path d="M 90 150 L 95 200 L 92 250 L 82 250 L 82 200 L 72 150 Z" fill="url(#horseCoat)" />
+                <path d="M 200 160 L 205 205 L 200 250 L 190 250 L 192 205 L 182 160 Z" fill="url(#horseCoat)" />
+                <rect x="82" y="246" width="10" height="5" fill="#94a3b8" rx="1"/>
+                <rect x="190" y="246" width="10" height="5" fill="#94a3b8" rx="1"/>
+                <path d="M 85 140 C 70 110, 60 70, 48 55 C 40 45, 30 55, 20 62 C 15 65, 12 75, 22 80 C 35 88, 48 100, 60 145 Z" fill="url(#horseCoat)" />
+                <path d="M 52 50 C 58 65, 72 90, 88 120 C 82 105, 70 80, 58 48 Z" fill="#0f172a" />
+                <circle cx="38" cy="58" r="2.5" fill="#ffffff" />
+                <circle cx="38" cy="58" r="1.5" fill="#020617" />
+                <!-- Crown -->
+                <g transform="translate(42, 36) rotate(15)">
+                    <path d="M 0 10 L 4 0 L 8 7 L 12 0 L 16 7 L 20 0 L 24 10 Z" fill="url(#goldGradient)" />
+                    <rect x="0" y="10" width="24" height="4" fill="url(#goldGradient)" rx="1"/>
+                    <circle cx="4" cy="2" r="1" fill="#ef4444"/>
+                    <circle cx="12" cy="2" r="1" fill="#3b82f6"/>
+                    <circle cx="20" cy="2" r="1" fill="#ef4444"/>
+                </g>
+                <!-- Gold Chain Necklace with Crucifix -->
+                <path d="M 50 80 Q 75 125 98 108" fill="none" stroke="url(#goldGradient)" stroke-width="3.5" stroke-dasharray="4 1.5" />
+                <g transform="translate(76, 114)">
+                    <rect x="-2" y="-12" width="4" height="22" fill="url(#goldGradient)" rx="1"/>
+                    <rect x="-8" y="-7" width="16" height="4" fill="url(#goldGradient)" rx="1"/>
+                    <line x1="0" y1="-7" x2="0" y2="3" stroke="#451a03" stroke-width="1.5"/>
+                    <line x1="-4" y1="-5" x2="4" y2="-5" stroke="#451a03" stroke-width="1.5"/>
+                </g>
+            </svg>`;
+        }
+
+        function getRealisticTigerSVG() {
+            return `
+            <svg viewBox="0 0 320 280" class="w-full h-full drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="tigerCoat" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ef4444" />
+                        <stop offset="60%" stop-color="#dc2626" />
+                        <stop offset="100%" stop-color="#7f1d1d" />
+                    </linearGradient>
+                </defs>
+                <ellipse cx="160" cy="255" rx="100" ry="12" fill="#000000" opacity="0.4" />
+                <path d="M 105 110 C 90 120, 85 160, 95 220 L 125 220 L 130 160 L 190 160 L 195 220 L 225 220 C 235 160, 230 120, 215 110 Z" fill="url(#tigerCoat)" />
+                <path d="M 200 130 C 240 120, 255 150, 250 230 L 225 230 C 230 180, 220 150, 200 145 Z" fill="#b91c1c" />
+                <ellipse cx="110" cy="222" rx="18" ry="8" fill="#dc2626" />
+                <ellipse cx="210" cy="222" rx="18" ry="8" fill="#dc2626" />
+                <g fill="#020617">
+                    <path d="M 92 140 L 110 145 L 94 155 Z" />
+                    <path d="M 228 140 L 210 145 L 226 155 Z" />
+                    <path d="M 88 170 L 112 172 L 90 185 Z" />
+                    <path d="M 232 170 L 208 172 L 230 185 Z" />
+                    <path d="M 225 150 L 245 155 L 228 165 Z" />
+                    <path d="M 227 180 L 248 185 L 230 195 Z" />
+                </g>
+                <circle cx="160" cy="90" r="48" fill="url(#tigerCoat)" />
+                <path d="M 120 58 C 110 35, 132 38, 138 52 Z" fill="#991b1b" stroke="#020617" stroke-width="2"/>
+                <path d="M 200 58 C 210 35, 188 38, 182 52 Z" fill="#991b1b" stroke="#020617" stroke-width="2"/>
+                <g fill="#020617">
+                    <path d="M 160 50 L 156 68 L 164 68 Z" />
+                    <path d="M 135 68 L 148 74 L 138 80 Z" />
+                    <path d="M 185 68 L 172 74 L 182 80 Z" />
+                </g>
+                <path d="M 142 100 C 142 90, 178 90, 178 100 C 178 116, 142 116, 142 100 Z" fill="#fef2f2" />
+                <polygon points="154,96 166,96 160,104" fill="#7f1d1d" />
+                <ellipse cx="142" cy="80" rx="7" ry="5" fill="#facc15" />
+                <ellipse cx="178" cy="80" rx="7" ry="5" fill="#facc15" />
+                <ellipse cx="143" cy="80" rx="2.5" ry="4" fill="#020617" />
+                <ellipse cx="177" cy="80" rx="2.5" ry="4" fill="#020617" />
+                <!-- Colombian Bandana -->
+                <g transform="translate(125, 112)">
+                    <path d="M 0 0 L 70 0 L 58 18 L 12 18 Z" fill="#facc15" />
+                    <path d="M 12 18 L 58 18 L 48 30 L 22 30 Z" fill="#1d4ed8" />
+                    <path d="M 22 30 L 48 30 L 35 48 Z" fill="#dc2626" />
+                </g>
+                <!-- Broken Chain -->
+                <g transform="translate(225, 200)">
+                    <rect x="-4" y="0" width="22" height="10" fill="#94a3b8" stroke="#334155" stroke-width="1.5" rx="2" />
+                    <path d="M 18 5 L 30 5" stroke="#cbd5e1" stroke-width="3" />
+                    <circle cx="33" cy="5" r="4" fill="none" stroke="#cbd5e1" stroke-width="2" />
+                    <line x1="38" y1="5" x2="48" y2="12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                    <line x1="52" y1="18" x2="62" y2="28" stroke="#94a3b8" stroke-width="3" stroke-dasharray="3 3" />
+                </g>
+            </svg>`;
+        }
+
+        const historicalScenarios = [
+            {
+                id: 1,
+                title: "1. Constitución de 1821",
+                metaType: "Político",
+                metaScope: "Interno",
+                atmosphere: "normal",
+                narrative: "El personaje está leyendo la primera constitución. Otro personaje le pregunta: “¿piensas que deberíamos añadir la libertad de cultos?”",
+                prompt: "¿Qué responderás al respecto?",
+                options: [
+                    {
+                        text: "“Claro que sí. Todos deberían poder escoger su religión.”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“No. Todos deben ser católicos y seguir las creencias de nuestra iglesia.”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "2. Barcos de vapor",
+                metaType: "Tecnológico",
+                metaScope: "Interno / Comercio",
+                atmosphere: "normal",
+                narrative: "El personaje está hablando con alguien más rico y le cuenta sobre sus experiencias en un barco de vapor. Él le dice: “Tú deberías exportar tus productos por un barco, seguro te beneficia.”",
+                prompt: "¿Cuál es tu postura sobre esta tecnología exportadora?",
+                options: [
+                    {
+                        text: "“Yo no creo porque frena el desarrollo económico, solo los más ricos lo pueden aprovechar y es un invento injusto para los demás.”",
+                        type: "CONSERVADOR"
+                    },
+                    {
+                        text: "“Pues claro, tengo que aprovechar los recursos que nos da el gobierno para beneficiarme.”",
+                        type: "LIBERAL"
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "3. Centralismo v.s. federalismo",
+                metaType: "Político",
+                metaScope: "Interno",
+                atmosphere: "tense",
+                narrative: "El personaje está en una elección, y le preguntan: “¿vas a votar por la autonomía de regiones o un solo poder central?”",
+                prompt: "¿Por cuál modelo emitirás tu voto?",
+                options: [
+                    {
+                        text: "Vota por el federalismo.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "Vota por el centralismo.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "4. Ferrocarril",
+                metaType: "Tecnológico",
+                metaScope: "Nacional",
+                atmosphere: "normal",
+                narrative: "El personaje puede tomar la decisión de tomar el ferrocarril para visitar otras partes del país. Otro pasajero del ferrocarril le pregunta: “¿Qué milagro tener una forma de transporte verdad?”",
+                prompt: "¿Qué respondes sobre el propósito del ferrocarril?",
+                options: [
+                    {
+                        text: "“Sí, porque nos ayuda a transportar y exportar productos como el café y el tabaco.”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“Sí, pero me parece que unifica la red nacional única para poder integrar el territorio.”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "5. Radicalismo",
+                metaType: "Social / Político",
+                metaScope: "Interno",
+                atmosphere: "tense",
+                narrative: "Un ciudadano viendo una protesta contra el gobierno le pregunta al personaje: “¿qué piensas de estos movimientos?”",
+                prompt: "¿Cuál es tu juicio sobre estas manifestaciones?",
+                options: [
+                    {
+                        text: "“Pienso que son buenos porque crean nuevas ideas y le dan más libertad a la gente.”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“Pienso que son malos porque no respetan la autoridad e imponen el balance entre el gobierno y la ciudad.”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 6,
+                title: "6. Confederación y el Olimpo Radical",
+                metaType: "Político",
+                metaScope: "Interno",
+                atmosphere: "tense",
+                narrative: "El personaje está viendo una protesta y está confundido. El personaje le pregunta a un protestante qué está pasando. El protestante le cuenta y le pregunta cuál lado está soportando.",
+                prompt: "¿A qué facción le darás tu apoyo?",
+                options: [
+                    {
+                        text: "Quieren mantener esta forma de estado y mejorar las partes que necesitan soporte.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "Quieren que el gobierno se quede como estaba porque no creen que el gobierno tiene que cambiar.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 7,
+                title: "7. Regeneración",
+                metaType: "Político",
+                metaScope: "Interno",
+                atmosphere: "tense",
+                narrative: "El personaje está en la firma de la constitución y un liberal le dice: “¿Cómo te parece esta nueva constitución, genial no?”",
+                prompt: "¿Cómo reaccionas ante la nueva carta magna?",
+                options: [
+                    {
+                        text: "“¡Sí! Es una muy buena idea, por fin todos tenemos nuestros propios poderes y autonomía.”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“¡No! Es una idea terrible, ¿cómo se supone que vamos a estar unidos si todos estamos divididos por región?”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 8,
+                title: "8. Guerras civiles del siglo XIX",
+                metaType: "Económico y Político",
+                metaScope: "Interno y Externo",
+                atmosphere: "war",
+                narrative: "El personaje está viendo la violencia de las guerras civiles. Otro personaje le pregunta: “¿qué crees que deberíamos hacer? ¿Parar las guerras o continuar peleando?”",
+                prompt: "¿Cuál es tu decisión ante la conflagración militar?",
+                options: [
+                    {
+                        text: "“¡Debemos seguir! ¡Nada va a cambiar si no luchamos por ella!”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“¡Tenemos que parar! ¡Nos vamos a destruir solos para nada!”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 9,
+                title: "9. Liberación de personas esclavizadas",
+                metaType: "Social",
+                metaScope: "Interno y Externo",
+                atmosphere: "tense",
+                narrative: "En la corte donde están debatiendo si la esclavitud debe estar abolida.",
+                prompt: "¿Qué postura defiendes en el tribunal?",
+                options: [
+                    {
+                        text: "Quieren que todos estén libres e iguales.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "No quieren que los esclavos estén libres porque quieren quedarse con sus esclavos y con las ideas del pasado.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 10,
+                title: "10. Colonización antioqueña",
+                metaType: "Económico",
+                metaScope: "Interno",
+                atmosphere: "normal",
+                narrative: "La gente empezó yendo a cultivar café en Antioquia y las personas están debatiendo si los dejan ir.",
+                prompt: "¿Cuál es tu posición frente a la expansión cafetera?",
+                options: [
+                    {
+                        text: "Quieren que pasen porque soporta a Colombia económicamente.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "No querían que esto pasara porque querían que se quedara el secreto del café y tabaco en el país.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 11,
+                title: "11. Concordato",
+                metaType: "Político y Social",
+                metaScope: "Interno y Externo",
+                atmosphere: "tense",
+                narrative: "Un Padre y un gobernador se reúnen a escondidas mientras un liberal escucha.",
+                prompt: "¿Qué opinión te merece este acuerdo entre Iglesia y Estado?",
+                options: [
+                    {
+                        text: "No quieren que pase porque quieren separar la religión del estado.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "Querían que pasara porque se alineaba perfectamente con sus ideas.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 12,
+                title: "12. Librecambismo vs. proteccionismo",
+                metaType: "Político y Económico",
+                metaScope: "Externo",
+                atmosphere: "tense",
+                narrative: "Los gólgotas y los draconianos empiezan a pelear sobre el libre comercio. Le preguntan al personaje qué piensa.",
+                prompt: "¿Con cuál grupo económico coincide tu propuesta?",
+                options: [
+                    {
+                        text: "Lo quieren porque quieren que todos tengan el libre comercio.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "No quieren esto porque ellos creían que los secretos de los bienes del país se queden en el país.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 13,
+                title: "13. Telégrafo",
+                metaType: "Tecnológico",
+                metaScope: "Nacional",
+                atmosphere: "normal",
+                narrative: "El personaje ve los nuevos cables y otro personaje viendo lo mismo le pregunta: “¿qué piensas del nuevo telégrafo?”",
+                prompt: "¿Cómo debe aprovecharse esta red de comunicación?",
+                options: [
+                    {
+                        text: "“Es clave para el comercio en lugares de difícil acceso.”",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "“Es clave para conectar mejor a Bogotá con el resto del país haciéndolo más centralizado.”",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 14,
+                title: "14. Energía Eléctrica",
+                metaType: "Tecnológico",
+                metaScope: "Urbano",
+                atmosphere: "normal",
+                narrative: "Al personaje le gusta que llegó la energía eléctrica, pero no puede decidir para qué usarla.",
+                prompt: "¿Cuál debe ser el uso prioritario del alumbrado y la electricidad?",
+                options: [
+                    {
+                        text: "La usa como motor para hacer negocios y crear industrias.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "La usa para mejorar el orden y la seguridad del público cuando se pone oscuro.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            },
+            {
+                id: 15,
+                title: "15. La Guerra de los Mil Días",
+                metaType: "Político",
+                metaScope: "Nacional / Crucial",
+                atmosphere: "war",
+                narrative: "La Guerra de los Mil Días empezó y el personaje tiene que escoger un lado por quién pelear.",
+                prompt: "¿Bajo qué estandarte e ideal lucharás en este conflicto final?",
+                options: [
+                    {
+                        text: "Quieren separar la iglesia de la educación y el estado, y quieren ser más libres.",
+                        type: "LIBERAL"
+                    },
+                    {
+                        text: "Conservar las ideas de los españoles no deja de que nuevas ideas vengan y que todo se quede igual.",
+                        type: "CONSERVADOR"
+                    }
+                ]
+            }
+        ];
+
+        window.onload = function() {
+            renderQuizQuestion();
+            setupEventListeners();
+        };
+
+        function setupEventListeners() {
+            document.getElementById('btn-start-story').addEventListener('click', startStoryNarrative);
+            document.getElementById('btn-next-scenario').addEventListener('click', nextScenario);
+            document.getElementById('btn-restart').addEventListener('click', restartGame);
+        }
+
+        function renderQuizQuestion() {
+            const q = quizQuestions[state.quizIndex];
+            document.getElementById('quiz-step-num').textContent = state.quizIndex + 1;
+            document.getElementById('quiz-progress-text').textContent = `${((state.quizIndex + 1) * 20)}% Completado`;
+            document.getElementById('quiz-progress-bar').style.width = `${((state.quizIndex + 1) * 20)}%`;
+            document.getElementById('quiz-question-title').textContent = q.title;
+
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 md:p-5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800/80 hover:border-amber-500/50 transition-all duration-200 group flex items-start gap-4 shadow-sm`;
+                btn.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-slate-300 font-bold flex items-center justify-center text-xs flex-shrink-0 transition-colors border border-slate-700">
+                        ${idx === 0 ? 'A' : 'B'}
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-400 group-hover:text-amber-400">Opción ${idx + 1}</span>
+                        <p class="text-sm md:text-base text-slate-200 font-medium leading-snug">${opt.text}</p>
+                    </div>
+                `;
+                btn.onclick = () => selectQuizOption(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectQuizOption(optionIdx) {
+            const currentQ = quizQuestions[state.quizIndex];
+            const chosen = currentQ.options[optionIdx];
+
+            state.answers.push({
+                questionId: currentQ.id,
+                questionTitle: currentQ.title,
+                chosenText: chosen.text,
+                type: chosen.type,
+                explanation: chosen.explanation
+            });
+
+            if (chosen.type === 'CONSERVADOR') {
+                state.conservativeScore++;
+            } else {
+                state.liberalScore++;
+            }
+
+            state.quizIndex++;
+
+            if (state.quizIndex < quizQuestions.length) {
+                renderQuizQuestion();
+            } else {
+                calculateAndShowCharacterResult();
+            }
+        }
+
+        function calculateAndShowCharacterResult() {
+            if (state.conservativeScore >= state.liberalScore) {
+                state.assignedParty = 'CONSERVADOR';
+            } else {
+                state.assignedParty = 'LIBERAL';
+            }
+
+            document.getElementById('screen-quiz').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const resTitle = document.getElementById('result-title');
+            const resSubtitle = document.getElementById('result-subtitle');
+            const resCard = document.getElementById('result-character-card');
+            const svgContainer = document.getElementById('result-svg-container');
+            const badge = document.getElementById('result-badge-ideology');
+            const desc = document.getElementById('result-description');
+            const symbolism = document.getElementById('result-symbolism');
+
+            if (state.assignedParty === 'CONSERVADOR') {
+                resTitle.textContent = "¡Jugarás como el Caballo Conservador!";
+                resTitle.className = "text-3xl md:text-5xl font-cinzel font-black text-blue-400";
+                resSubtitle.textContent = "Líder defensor del orden, las tradiciones y la influencia de la Iglesia.";
+                
+                resCard.className = "rounded-2xl p-6 md:p-8 border border-blue-900/60 bg-gradient-to-br from-blue-950/50 via-slate-900 to-slate-950 shadow-2xl";
+                svgContainer.innerHTML = getRealisticHorseSVG();
+                
+                badge.textContent = "Partido Conservador • El Caballo Azul";
+                badge.className = "px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-600/30 text-blue-300 border border-blue-500/40";
+
+                desc.textContent = "Tus selecciones reflejan una ideología conservadora del siglo XIX. Buscas un Estado central con instituciones fuertes que resguarde el orden social y la tradición moral católica heredada.";
+
+                symbolism.innerHTML = `
+                    <p class="font-bold text-blue-300 text-xs uppercase font-cinzel mb-1">Simbología del Personaje:</p>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li><strong class="text-blue-200">Pelaje Azul:</strong> Representa el partido conservador y la tradición.</li>
+                        <li><strong class="text-blue-200">Corona Dorada & Collar con Cruz:</strong> Fidelidad al legado de la corona, la fe católica y las tradiciones.</li>
+                        <li><strong class="text-blue-200">El Caballo:</strong> Símbolo de la conquista, la colonia, el orden y un poder único central.</li>
+                    </ul>
+                `;
+            } else {
+                resTitle.textContent = "¡Jugarás como el Tigre Liberal!";
+                resTitle.className = "text-3xl md:text-5xl font-cinzel font-black text-red-500";
+                resSubtitle.textContent = "Líder indomable del federalismo, las libertades y el libre cambio.";
+
+                resCard.className = "rounded-2xl p-6 md:p-8 border border-red-900/60 bg-gradient-to-br from-red-950/50 via-slate-900 to-slate-950 shadow-2xl";
+                svgContainer.innerHTML = getRealisticTigerSVG();
+
+                badge.textContent = "Partido Liberal • El Tigre Rojo";
+                badge.className = "px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-600/30 text-red-300 border border-red-500/40";
+
+                desc.textContent = "Tus selecciones coinciden con la ideología liberal. Defiendes el federalismo, la autonomía de las regiones, el libre comercio entre naciones y la educación libre de influencia eclesiástica.";
+
+                symbolism.innerHTML = `
+                    <p class="font-bold text-red-300 text-xs uppercase font-cinzel mb-1">Simbología del Personaje:</p>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li><strong class="text-red-200">Pelaje Rojo:</strong> Representa el partido liberal y el fervor reformista.</li>
+                        <li><strong class="text-red-200">Bandana Tricolor & Cadena Rota:</strong> Simboliza la libertad de ser un estado federalista y la ruptura de ataduras.</li>
+                        <li><strong class="text-red-200">El Tigre:</strong> Animal feroz que no sigue instrucciones coloniales y lucha por la autonomía.</li>
+                    </ul>
+                `;
+            }
+
+            const breakdownContainer = document.getElementById('answers-breakdown-container');
+            breakdownContainer.innerHTML = '';
+
+            state.answers.forEach((ans) => {
+                const isCons = ans.type === 'CONSERVADOR';
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border ${isCons ? 'border-blue-900/40 bg-blue-950/30' : 'border-red-900/40 bg-red-950/30'} space-y-2`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-slate-200">${ans.questionTitle}</span>
+                        <span class="px-2.5 py-0.5 rounded-full ${isCons ? 'bg-blue-900/80 text-blue-200 border border-blue-700/50' : 'bg-red-900/80 text-red-200 border border-red-700/50'} font-bold text-[10px] uppercase">
+                            Opción ${ans.type}
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 italic">" Seleccionaste: ${ans.chosenText} "</p>
+                    <p class="text-xs text-slate-400 border-t border-slate-800/80 pt-2"><strong class="text-amber-400">Contexto:</strong> ${ans.explanation}</p>
+                `;
+                breakdownContainer.appendChild(card);
+            });
+        }
+
+        function startStoryNarrative() {
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            const headerStatus = document.getElementById('header-status');
+            headerStatus.classList.remove('hidden');
+            
+            document.getElementById('header-avatar').textContent = state.assignedParty === 'CONSERVADOR' ? '🐴' : '🐯';
+            document.getElementById('header-party').textContent = state.assignedParty;
+            document.getElementById('header-party').className = `text-xs font-bold uppercase tracking-wider ${state.assignedParty === 'CONSERVADOR' ? 'text-blue-400' : 'text-red-400'}`;
+
+            updatePopularityUI(0);
+            renderScenario();
+        }
+
+        function renderScenario() {
+            const sc = historicalScenarios[state.currentScenarioIndex];
+
+            document.getElementById('game-consequence-box').classList.add('hidden');
+            document.getElementById('game-chapter-num').textContent = `Escenario ${state.currentScenarioIndex + 1} de 15`;
+            document.getElementById('game-chapter-title').textContent = sc.title;
+
+            document.getElementById('game-meta-type').textContent = `Fenómeno: ${sc.metaType}`;
+            document.getElementById('game-meta-scope').textContent = `Alcance: ${sc.metaScope}`;
+
+            applyAtmosphereTheme(sc.atmosphere);
+
+            const portraitContainer = document.getElementById('game-svg-portrait');
+            portraitContainer.innerHTML = state.assignedParty === 'CONSERVADOR' ? getRealisticHorseSVG() : getRealisticTigerSVG();
+            document.getElementById('game-portrait-name').textContent = state.assignedParty === 'CONSERVADOR' ? 'Caballo Conservador' : 'Tigre Liberal';
+
+            document.getElementById('game-narrative-text').textContent = sc.narrative;
+            document.getElementById('game-dilemma-prompt').textContent = sc.prompt;
+
+            const optionsContainer = document.getElementById('game-options-container');
+            optionsContainer.innerHTML = '';
+
+            sc.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 md:p-5 rounded-xl border border-slate-800 bg-slate-950/80 hover:bg-slate-800/90 hover:border-amber-500/50 transition-all duration-200 group flex items-start gap-4 shadow-sm`;
+                
+                btn.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-slate-300 font-bold flex items-center justify-center text-xs flex-shrink-0 transition-colors border border-slate-700">
+                        ${idx + 1}
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-sm md:text-base text-slate-200 font-medium leading-snug">${opt.text}</p>
+                    </div>
+                `;
+
+                btn.onclick = () => chooseScenarioOption(opt);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function chooseScenarioOption(chosenOption) {
+            const sc = historicalScenarios[state.currentScenarioIndex];
+            const isAligned = chosenOption.type === state.assignedParty;
+
+            let popChange = 0;
+            if (isAligned) {
+                popChange = 15; // Popularity increases
+                state.popularity = Math.min(100, state.popularity + popChange);
+            } else {
+                popChange = -15; // Popularity decreases
+                state.popularity = Math.max(0, state.popularity + popChange);
+            }
+
+            updatePopularityUI(popChange);
+
+            state.historyLog.push({
+                chapterTitle: sc.title,
+                chosenText: chosenOption.text,
+                optionType: chosenOption.type,
+                aligned: isAligned,
+                popChange: popChange
+            });
+
+            const consequenceBox = document.getElementById('game-consequence-box');
+            const icon = document.getElementById('consequence-icon');
+            const title = document.getElementById('consequence-title');
+            const text = document.getElementById('consequence-text');
+            const popBadge = document.getElementById('consequence-pop-badge');
+
+            consequenceBox.classList.remove('hidden');
+
+            if (isAligned) {
+                consequenceBox.className = "fade-in bg-slate-950 border border-emerald-500/50 rounded-2xl p-6 space-y-4 shadow-2xl";
+                icon.textContent = "🏛️";
+                title.textContent = "Decisión Coherente con tu Ideología";
+                title.className = "font-cinzel font-bold text-lg text-emerald-400";
+                popBadge.textContent = `+15% POPULARIDAD`;
+                popBadge.className = "px-3 py-1 rounded-full font-mono text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700";
+                text.textContent = `Mantuviste la fidelidad a los principios de tu partido (${state.assignedParty}). Tus seguidores celebran tu firmeza doctrinaria frente a este evento histórico.`;
+            } else {
+                consequenceBox.className = "fade-in bg-slate-950 border border-red-500/50 rounded-2xl p-6 space-y-4 shadow-2xl";
+                icon.textContent = "⚡";
+                title.textContent = "Contradicción Ideológica";
+                title.className = "font-cinzel font-bold text-lg text-red-400";
+                popBadge.textContent = `-15% POPULARIDAD`;
+                popBadge.className = "px-3 py-1 rounded-full font-mono text-xs font-bold bg-red-950 text-red-300 border border-red-700";
+                text.textContent = `Elegiste una posición propia del bando opuesto (${chosenOption.type}). Tu base de partidarios cuestiona tu compromiso e inclinación política.`;
+            }
+
+            consequenceBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updatePopularityUI(changeVal) {
+            document.getElementById('header-pop-text').textContent = `${Math.round(state.popularity)}%`;
+            document.getElementById('header-pop-bar').style.width = `${state.popularity}%`;
+
+            if (changeVal !== 0) {
+                const anchor = document.getElementById('pop-feedback-anchor');
+                const popElem = document.createElement('div');
+                popElem.className = `pop-indicator font-mono font-black text-sm px-2.5 py-1 rounded-lg border shadow-lg ${
+                    changeVal > 0 ? 'bg-emerald-900 text-emerald-200 border-emerald-500' : 'bg-red-900 text-red-200 border-red-500'
+                }`;
+                popElem.textContent = changeVal > 0 ? `+${changeVal}% Popularidad` : `${changeVal}% Popularidad`;
+                
+                anchor.appendChild(popElem);
+                setTimeout(() => popElem.remove(), 1200);
+            }
+        }
+
+        function nextScenario() {
+            state.currentScenarioIndex++;
+
+            if (state.currentScenarioIndex < historicalScenarios.length) {
+                renderScenario();
+            } else {
+                renderEpilogue();
+            }
+        }
+
+        function applyAtmosphereTheme(mode) {
+            document.body.className = "min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 transition-colors duration-1000 ";
+            const badge = document.getElementById('game-atmosphere-badge');
+
+            if (mode === 'war') {
+                document.body.classList.add('theme-war');
+                badge.textContent = "⚠️ Conflicto Civil de Alta Tensión";
+                badge.className = "px-3.5 py-1 rounded-full text-xs font-bold uppercase border bg-red-950 text-red-300 border-red-700 animate-pulse";
+            } else if (mode === 'tense') {
+                document.body.classList.add('theme-tense');
+                badge.textContent = "⚔️ Debate y Tensión Política";
+                badge.className = "px-3.5 py-1 rounded-full text-xs font-bold uppercase border bg-amber-950 text-amber-300 border-amber-700";
+            } else {
+                document.body.classList.add('theme-normal');
+                badge.textContent = "🕊️ Estabilidad / Avance Tecnológico";
+                badge.className = "px-3.5 py-1 rounded-full text-xs font-bold uppercase border bg-slate-900 text-slate-300 border-slate-700";
+            }
+        }
+
+        function renderEpilogue() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-epilogue').classList.remove('hidden');
+
+            document.body.className = "min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 transition-colors duration-1000 " + 
+                (state.assignedParty === 'CONSERVADOR' ? 'theme-victory-blue' : 'theme-victory-red');
+
+            const epTitle = document.getElementById('epilogue-title');
+            const epCharName = document.getElementById('epilogue-character-name');
+            const epPopVal = document.getElementById('epilogue-pop-val');
+            const epText = document.getElementById('epilogue-text');
+
+            epCharName.textContent = state.assignedParty === 'CONSERVADOR' ? 'El Caballo Conservador' : 'El Tigre Liberal';
+            epPopVal.textContent = `${Math.round(state.popularity)}%`;
+
+            if (state.popularity >= 70) {
+                epTitle.textContent = "¡Triunfo e Hegemonía Política!";
+                epText.textContent = `A lo largo de los 15 eventos clave del siglo XIX, mantuviste una línea coherente con la filosofía de tu personaje (${state.assignedParty}). Tu alta popularidad consolidó las instituciones que defendías para Colombia.`;
+            } else if (state.popularity >= 40) {
+                epTitle.textContent = "Gobernabilidad Cuestionada y Modas Ambiguas";
+                epText.textContent = `Tomaste decisiones divididas entre ambas corrientes políticas. Lograste sortear varias crisis del siglo XIX, pero sufriste desgaste popular por tus contradicciones doctrinarias.`;
+            } else {
+                epTitle.textContent = "Colapso Político y Perdidá de Respaldo";
+                epText.textContent = `Tus decisiones se alejaron reiteradamente del ideario de tu bando. Al finalizar la Guerra de los Mil Días, tu popularidad cayó drásticamente, dejando tu liderazgo debilitado.`;
+            }
+
+            const listContainer = document.getElementById('epilogue-list');
+            listContainer.innerHTML = '';
+
+            state.historyLog.forEach((log, index) => {
+                const li = document.createElement('li');
+                li.className = "py-1.5 border-b border-slate-800/60";
+                li.innerHTML = `
+                    <span class="text-amber-300 font-bold">${index + 1}. ${log.chapterTitle}:</span> 
+                    <span class="${log.aligned ? 'text-emerald-400' : 'text-red-400'}">(${log.popChange > 0 ? '+15%' : '-15%'})</span>
+                    <span class="text-slate-300 text-xs block italic stroke-slate-700">" ${log.chosenText} "</span>
+                `;
+                listContainer.appendChild(li);
+            });
+        }
+
+        function restartGame() {
+            state.quizIndex = 0;
+            state.answers = [];
+            state.conservativeScore = 0;
+            state.liberalScore = 0;
+            state.assignedParty = null;
+            state.popularity = 50;
+            state.currentScenarioIndex = 0;
+            state.historyLog = [];
+
+            document.getElementById('header-status').classList.add('hidden');
+            document.getElementById('screen-epilogue').classList.add('hidden');
+            document.getElementById('screen-quiz').classList.remove('hidden');
+
+            document.body.className = "theme-normal min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 transition-colors duration-1000";
+
+            renderQuizQuestion();
+        }
+    </script>
+</body>
+</html>
+```
